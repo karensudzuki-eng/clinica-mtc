@@ -12,8 +12,8 @@ const DEDICATED_SCHEMA = 'clinica_mtc';
 
 let supabaseClient = null;
 let currentConfig = {
-    url: (typeof process !== 'undefined' && process.env && process.env.SUPABASE_URL) || 'https://onnlfkbnenskmckwpovap.supabase.co',
-    anonKey: (typeof process !== 'undefined' && process.env && process.env.SUPABASE_ANON_KEY) || '',
+    url: (typeof process !== 'undefined' && process.env && process.env.SUPABASE_URL) || 'https://onnlfkbnenkmckwpovap.supabase.co',
+    anonKey: (typeof process !== 'undefined' && process.env && process.env.SUPABASE_ANON_KEY) || 'sb_publishable_cC5QmP8LbeglgbdaCJy4Xw_ZJ_vR-Fk',
     schema: (typeof process !== 'undefined' && process.env && process.env.SUPABASE_SCHEMA) || DEDICATED_SCHEMA
 };
 

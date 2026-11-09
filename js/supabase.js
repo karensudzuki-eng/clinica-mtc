@@ -13,8 +13,8 @@ const DEDICATED_SCHEMA = 'clinica_mtc';
 // Estado global de conexión
 let supabaseClient = null;
 let currentConfig = {
-    url: 'https://onnlfkbnenskmckwpovap.supabase.co',
-    anonKey: '',
+    url: 'https://onnlfkbnenkmckwpovap.supabase.co',
+    anonKey: 'sb_publishable_cC5QmP8LbeglgbdaCJy4Xw_ZJ_vR-Fk',
     schema: DEDICATED_SCHEMA
 };
 

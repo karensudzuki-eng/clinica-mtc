@@ -4,8 +4,6 @@
   "description": "Sistema Clínico Cloud para Medicina Tradicional China y Auriculoterapia con Supabase y Vercel",
   "main": "index.html",
   "scripts": {
-    "dev": "vite",
-    "build": "echo 'Proyecto estático optimizado listo para Vercel'",
     "start": "npx serve ."
   },
   "keywords": [
