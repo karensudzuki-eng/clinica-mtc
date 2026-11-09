@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica MTC & Auriculoterapia | Sistema de Gestión Clínica Cloud</title>
+    
+    <!-- Tipografía Profesional Inter / Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clinical: {
+                            900: '#0a192f',
+                            800: '#0f274a',
+                            700: '#1e3a8a',
+                            600: '#2563eb',
+                            500: '#3b82f6',
+                            100: '#dbeafe',
+                            50: '#f0f7ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Estilos Personalizados del Sistema -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- ============================================================================== -->
+    <!-- ENCABEZADO CORPORATIVO CLÍNICO (BLUE-900 / BLUE-800) -->
+    <!-- ============================================================================== -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            
+            <!-- Identidad & Logotipo -->
+            <div class="flex items-center space-x-3.5">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-inner text-white font-black text-xl tracking-tighter">
+                    MTC
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        Sistema Clínico MTC & Auriculoterapia
+                        <span class="text-[10px] font-mono uppercase bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full">v1.0 Cloud</span>
+                    </h1>
+                    <p class="text-xs text-slate-300">Gestión Integral de Fichas, Diagnóstico Tradicional y Evolución</p>
+                </div>
+            </div>
+
+            <!-- Indicadores de Estado y Acceso Cloud -->
+            <div class="flex items-center space-x-3">
+                <!-- Indicador de Base de Datos Supabase -->
+                <button id="cloud-status-badge" title="Haz clic para ver o configurar credenciales de Supabase" class="flex items-center space-x-2 text-xs bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-full hover:bg-slate-700 transition">
+                    <span id="cloud-status-dot" class="pulse-dot offline"></span>
+                    <span id="cloud-status-text" class="font-medium">Esquema: clinica_mtc</span>
+                    <span class="text-slate-400 text-[10px]">⚙️</span>
+                </button>
+
+                <!-- Paciente Activo en Memoria -->
+                <div class="hidden md:flex items-center space-x-2 text-xs bg-blue-950/80 border border-blue-800/80 px-3 py-1.5 rounded-lg text-blue-200">
+                    <span class="text-slate-400">Paciente Activo:</span>
+                    <span id="header-active-patient" class="font-bold text-white truncate max-w-[140px]">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================================== -->
+    <!-- CONTENEDOR PRINCIPAL: SIDEBAR + VISTAS DINÁMICAS -->
+    <!-- ============================================================================== -->
+    <div class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- SIDEBAR DE NAVEGACIÓN (AZUL OSCURO CORPORATIVO / ACCESOS) -->
+        <aside class="lg:col-span-1 space-y-4">
+            
+            <!-- Menú de Vistas Clínicas -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-xs border border-slate-200 space-y-1.5">
+                <div class="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                    Módulos Clínicos
+                </div>
+
+                <button id="btn-search" class="w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-sm transition flex items-center justify-between bg-blue-900 text-white shadow-xs">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-base">🔍</span>
+                        <span>Buscar Paciente</span>
+                    </div>
+                    <span class="text-xs bg-blue-800 px-2 py-0.5 rounded-full font-mono" id="header-total-patients-count">2</span>
+                </button>
+
+                <button id="btn-anamnesis" class="w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 hover:bg-slate-100 flex items-center space-x-3">
+                    <span class="text-base">📝</span>
+                    <span>Nueva Anamnesis (Ingreso)</span>
+                </button>
+
+                <button id="btn-seguimiento" class="w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 hover:bg-slate-100 flex items-center space-x-3">
+                    <span class="text-base">📈</span>
+                    <span>Seguimiento de Sesión</span>
+                </button>
+
+                <button id="btn-ai" class="w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 hover:bg-slate-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-base">✨</span>
+                        <span>Autocompletado IA</span>
+                    </div>
+                    <span class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">PDF</span>
+                </button>
+
+                <button id="btn-photos" class="w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 hover:bg-slate-100 flex items-center space-x-3">
+                    <span class="text-base">📷</span>
+                    <span>Evolución Fotográfica</span>
+                </button>
+            </div>
+
+            <!-- Caja de Información de Esquema Dedicado Cloud -->
+            <div class="bg-gradient-to-br from-blue-900 to-slate-900 text-white p-4 rounded-2xl shadow-sm border border-blue-800 text-xs space-y-2">
+                <div class="flex items-center justify-between font-bold text-blue-200">
+                    <span class="flex items-center gap-1.5">🛡️ Supabase Dedicado</span>
+                    <span class="text-[10px] font-mono bg-blue-700/60 px-2 py-0.5 rounded">clinica_mtc</span>
+                </div>
+                <p class="text-slate-300 leading-relaxed">
+                    Las tablas están aisladas en el esquema <code class="text-blue-300 font-mono">clinica_mtc</code> para no saturar ni entrar en conflicto con la base de datos pública.
+                </p>
+                <div class="pt-1 text-[11px] text-blue-300/80">
+                    Soporte para RLS y persistencia PostgreSQL en tiempo real.
+                </div>
+            </div>
+
+            <!-- Accesos Rápidos -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 text-xs space-y-2">
+                <div class="font-bold text-slate-700 text-xs uppercase tracking-wider">Materiales Auriculares</div>
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-[11px] border border-slate-200">🌱 Semillas Vaccaria</span>
+                    <span class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-[11px] border border-amber-200">🟡 Balines Dorados</span>
+                    <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[11px] border border-slate-200">⚪ Balines Plateados</span>
+                    <span class="bg-blue-50 text-blue-800 px-2 py-1 rounded text-[11px] border border-blue-200">🧲 Balines Magnéticos</span>
+                    <span class="bg-rose-50 text-rose-800 px-2 py-1 rounded text-[11px] border border-rose-200">📌 Chinchetas Intradérmicas</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ESPACIO DE TRABAJO PRINCIPAL (VISTAS DINÁMICAS) -->
+        <main class="lg:col-span-3 space-y-6">
+
+            <!-- ================================================================== -->
+            <!-- VISTA 1: BÚSQUEDA Y SELECTOR DE PACIENTES CON HISTORIAL -->
+            <!-- ================================================================== -->
+            <section id="tab-search" class="space-y-6">
+                <!-- Buscador Principal Instantáneo -->
+                <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Búsqueda y Selector de Pacientes</h2>
+                            <p class="text-xs text-slate-500">Localiza rápidamente una ficha clínica por Nombre Completo o RUT</p>
+                        </div>
+                        <button id="btn-new-patient-shortcut" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+                            <span>＋</span>
+                            <span>Nueva Anamnesis</span>
+                        </button>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            🔍
+                        </span>
+                        <input id="input-search-paciente" type="text" placeholder="Escribe el nombre o RUT del paciente (ej. María Elena o 14.589.231-K)..." 
+                               class="w-full pl-10 pr-4 py-3 bg-slate-50/70 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <!-- Lista de Resultados de Pacientes -->
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-3.5 bg-slate-50 border-b border-slate-200 font-semibold text-xs uppercase tracking-wider text-slate-600 flex justify-between items-center">
+                        <span>Fichas Clínicas Registradas</span>
+                        <span class="text-slate-400 font-normal">Haz clic sobre un paciente para abrir su historial</span>
+                    </div>
+
+                    <div id="patients-list-container" class="p-4 space-y-2.5 divide-y-0">
+                        <!-- Renderizado dinámico desde app.js -->
+                    </div>
+
+                    <div id="patients-empty-state" class="hidden p-8 text-center text-slate-500 text-sm">
+                        <p class="text-2xl mb-2">🔎</p>
+                        <p class="font-semibold text-slate-700">No se encontraron pacientes con ese criterio</p>
+                        <p class="text-xs text-slate-400 mt-1">Verifica el nombre o registra una nueva anamnesis</p>
+                    </div>
+                </div>
+
+                <!-- Historial Cronológico Expandido del Paciente Seleccionado -->
+                <div id="patient-history-panel" class="hidden bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700">Expediente Clínico Cronológico</span>
+                            <h3 id="history-patient-name" class="text-xl font-black text-slate-900 mt-0.5">Nombre del Paciente</h3>
+                            <div class="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                <span id="history-patient-rut" class="font-mono font-bold text-slate-700">RUT: -</span>
+                                <span id="history-patient-contact">Contacto: -</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <button onclick="switchTab('seguimiento')" class="bg-blue-900 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+                                <span>📈</span>
+                                <span>Registrar Seguimiento</span>
+                            </button>
+                            <button onclick="switchTab('photos')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                                <span>📷</span>
+                                <span>Ver Fotos</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ficha Resumen de Antecedentes y Medicamentos -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <span class="font-bold text-slate-700 block mb-1">📋 Antecedentes Médicos & Quirúrgicos:</span>
+                            <p id="history-antecedentes" class="text-slate-600 leading-relaxed">-</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700 block mb-1">💊 Medicamentos / Farmacoterapia:</span>
+                            <p id="history-medicamentos" class="text-slate-600 leading-relaxed">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Línea de Tiempo (Anamnesis + Seguimientos) -->
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                            <span>⏱️</span> Línea de Tiempo de Sesiones y Evolución
+                        </h4>
+                        <div id="history-timeline-container" class="space-y-2">
+                            <!-- Inyectado dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================================================================== -->
+            <!-- VISTA 2: FICHA DE INGRESO (ANAMNESIS MTC & AURICULOTERAPIA) -->
+            <!-- ================================================================== -->
+            <section id="tab-anamnesis" class="hidden space-y-6">
+                <form id="form-anamnesis" class="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200 space-y-8">
+                    
+                    <!-- Cabecera del Formulario -->
+                    <div class="border-b border-slate-200 pb-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-900">Ficha Clínica de Ingreso - Anamnesis MTC</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">Registro completo de primera consulta, diferenciación de síndromes y aurículo-diagnóstico</p>
+                            </div>
+                            <span class="text-xs bg-blue-100 text-blue-900 font-bold px-3 py-1 rounded-full border border-blue-200">Sesión 1</span>
+                        </div>
+                    </div>
+
+                    <!-- Sección 1: Datos de Identificación -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                            <span>1.</span> Identificación del Paciente
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                            <div class="md:col-span-2">
+                                <label class="block font-semibold text-slate-700 mb-1">Nombre Completo *</label>
+                                <input id="ana-nombre" required type="text" placeholder="Ej. Roberto Andrés Carrasco Peña" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">RUT / Identificación *</label>
+                                <input id="ana-rut" required type="text" placeholder="12.345.678-9" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Teléfono Móvil</label>
+                                <input id="ana-telefono" type="text" placeholder="+56 9 1234 5678" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Correo Electrónico</label>
+                                <input id="ana-email" type="email" placeholder="paciente@correo.cl" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Fecha de Nacimiento</label>
+                                <input id="ana-nacimiento" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block font-semibold text-slate-700 mb-1">Ocupación / Profesión</label>
+                                <input id="ana-ocupacion" type="text" placeholder="Ej. Arquitecto, Trabajo de oficina frente a computador" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Motivo de Consulta y Antecedentes Médicos -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                            <span>2.</span> Motivo de Consulta & Historia Clínica Occidental
+                        </h3>
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Motivo Principal de Consulta (Síntomas principales expresados por el paciente) *</label>
+                                <textarea id="ana-motivo" required rows="2" placeholder="Describa el motivo, localización del dolor o malestar, agravantes o factores de alivio..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Tiempo de la Dolencia / Evolución</label>
+                                    <input id="ana-tiempo-dolencia" type="text" placeholder="Ej. 6 meses progresivo, agudo hace 3 días" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Diagnóstico Médico Occidental (si aplica)</label>
+                                    <input id="ana-diag-occidental" type="text" placeholder="Ej. Lumbalgia mecánica, Migraña con aura" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Patologías de Base</label>
+                                    <input id="ana-patologias" type="text" placeholder="Ej. Hipertensión, Hipotiroidismo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Cirugías Previas</label>
+                                    <input id="ana-cirugias" type="text" placeholder="Ej. Colecistectomía (2015)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Alergias Conocidas</label>
+                                    <input id="ana-alergias" type="text" placeholder="Ej. Penicilina, Látex, Ninguna" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Medicamentos Actuales (Separados por coma)</label>
+                                <input id="ana-medicamentos" type="text" placeholder="Ej. Paracetamol 500mg, Losartán 50mg, Levotiroxina 75mcg" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 3: Hábitos y Esferas Funcionales MTC -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                            <span>3.</span> Hábitos y Ritmos Biológicos (Interrogatorio MTC)
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Calidad del Sueño</label>
+                                <input id="ana-habito-sueno" type="text" placeholder="Ej. Despertares 2 AM, Insomnio" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Digestión y Evacuación</label>
+                                <input id="ana-habito-digestion" type="text" placeholder="Ej. Heces pastosas, distensión" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Emociones Predominantes</label>
+                                <input id="ana-habito-emociones" type="text" placeholder="Ej. Irritabilidad, Ansiedad, Preocupación" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Sed y Sabor en Boca</label>
+                                <input id="ana-habito-sed" type="text" placeholder="Ej. Deseo bebidas calientes, boca amarga" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 4: Diagnóstico de Lengua MTC -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                                <span>4.</span> Inspección de Lengua (Diagnóstico Tradicional)
+                            </h3>
+                            <span class="text-xs text-slate-400">Pilar central del diagnóstico en MTC</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Cuerpo de la Lengua</label>
+                                <select id="ana-lengua-cuerpo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Normal">Normal (Flexible, tamaño armónico)</option>
+                                    <option value="Hinchada con marcas dentales">Hinchada con marcas dentales (Humedad/Deficiencia de Bazo)</option>
+                                    <option value="Delgada y contraída">Delgada y contraída (Deficiencia de Yin o Sangre)</option>
+                                    <option value="Rígida / Desviada">Rígida / Desviada (Viento interno / Afección hepática)</option>
+                                    <option value="Con fisuras longitudinales">Con fisuras longitudinales (Calor / Vacío de Yin)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Color del Cuerpo</label>
+                                <select id="ana-lengua-color" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Rosada normal">Rosada normal (Buen estado del Shen y Qi)</option>
+                                    <option value="Pálida">Pálida (Vacío de Yang / Vacío de Sangre)</option>
+                                    <option value="Roja con bordes o punta más intensa">Roja con bordes o punta más intensa (Calor / Fuego de Hígado o Corazón)</option>
+                                    <option value="Roja oscura / Escarlata">Roja oscura / Escarlata (Calor extremo o en nivel nutritivo)</option>
+                                    <option value="Amoratada / Violácea">Amoratada / Violácea (Estasis de Sangre / Frío severo)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Saburra de la Lengua</label>
+                                <select id="ana-lengua-saburra" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Blanca fina y húmeda">Blanca fina y húmeda (Normal)</option>
+                                    <option value="Blanca gruesa">Blanca gruesa (Frío / Retención de alimentos)</option>
+                                    <option value="Amarilla gruesa y seca">Amarilla gruesa y seca (Calor Plenitud)</option>
+                                    <option value="Grasa / Viscosa">Grasa / Viscosa (Flema - Humedad acumulada)</option>
+                                    <option value="Pelada / Geográfica / Sin saburra">Pelada / Geográfica / Sin saburra (Deficiencia severa de Yin de Estómago o Riñón)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 5: Diferenciación de Síndromes: 5 Elementos y Ba Gang -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                            <span>5.</span> Síndromes MTC: 5 Elementos & Ba Gang (8 Principios)
+                        </h3>
+
+                        <!-- 5 Elementos Checkboxes -->
+                        <div class="space-y-2 text-xs">
+                            <label class="block font-semibold text-slate-700">Teoría de los 5 Elementos comprometidos en el cuadro:</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 cursor-pointer">
+                                    <input type="checkbox" name="cinco_elementos" value="Madera (Hígado/Vesícula Biliar)" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                    <span class="font-bold text-emerald-900">🌳 Madera</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-rose-200 bg-rose-50 cursor-pointer">
+                                    <input type="checkbox" name="cinco_elementos" value="Fuego (Corazón/Intestino Delgado)" class="rounded text-rose-600 focus:ring-rose-500">
+                                    <span class="font-bold text-rose-900">🔥 Fuego</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50 cursor-pointer">
+                                    <input type="checkbox" name="cinco_elementos" value="Tierra (Bazo/Estómago)" class="rounded text-amber-600 focus:ring-amber-500">
+                                    <span class="font-bold text-amber-900">⛰️ Tierra</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-300 bg-slate-100 cursor-pointer">
+                                    <input type="checkbox" name="cinco_elementos" value="Metal (Pulmón/Intestino Grueso)" class="rounded text-slate-600 focus:ring-slate-500">
+                                    <span class="font-bold text-slate-800">🪙 Metal</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-blue-200 bg-blue-50 cursor-pointer">
+                                    <input type="checkbox" name="cinco_elementos" value="Agua (Riñón/Vejiga)" class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span class="font-bold text-blue-900">💧 Agua</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 8 Principios Ba Gang -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-2">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Polaridad Primaria</label>
+                                <select id="ana-bagang-polaridad" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Yang">Yang</option>
+                                    <option value="Yin">Yin</option>
+                                    <option value="Mixto Yin-Yang">Mixto Yin-Yang</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Localización</label>
+                                <select id="ana-bagang-localizacion" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Interior (Zang-Fu)">Interior (Zang-Fu / Órganos)</option>
+                                    <option value="Exterior (Biao / Superficial)">Exterior (Biao / Superficial)</option>
+                                    <option value="Semi-Interior / Semi-Exterior (Shao Yang)">Semi-Interior / Semi-Exterior (Shao Yang)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Naturaleza Térmica</label>
+                                <select id="ana-bagang-temperatura" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Calor (Re)">Calor (Re)</option>
+                                    <option value="Frío (Han)">Frío (Han)</option>
+                                    <option value="Calor Vacío (Xu Re)">Calor Vacío (Xu Re)</option>
+                                    <option value="Frío Vacío (Xu Han)">Frío Vacío (Xu Han)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Fuerza Patológica</label>
+                                <select id="ana-bagang-fuerza" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Plenitud (Shi)">Plenitud (Shi)</option>
+                                    <option value="Vacío (Xu)">Vacío (Xu)</option>
+                                    <option value="Plenitud con Vacío de Base">Plenitud con Vacío de Base</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Órganos y Canales -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-2">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Órgano Zang-Fu Principalmente Afectado</label>
+                                <select id="ana-organo-principal" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Hígado (Gan)">Hígado (Gan) - Estancamiento Qi / Yang elevado</option>
+                                    <option value="Bazo (Pi)">Bazo (Pi) - Deficiencia Qi / Humedad</option>
+                                    <option value="Riñón (Shen)">Riñón (Shen) - Vacío Yin / Yang / Esencia</option>
+                                    <option value="Corazón (Xin)">Corazón (Xin) - Shen perturbado / Fuego</option>
+                                    <option value="Pulmón (Fei)">Pulmón (Fei) - Afección Wei Qi</option>
+                                    <option value="Vesícula Biliar (Dan)">Vesícula Biliar (Dan)</option>
+                                    <option value="Estómago (Wei)">Estómago (Wei) - Fuego / Retención</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Meridiano Principal Comprometido</label>
+                                <select id="ana-meridiano-principal" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                    <option value="Meridiano de Vesícula Biliar (Zu Shao Yang)">Meridiano de Vesícula Biliar (Zu Shao Yang)</option>
+                                    <option value="Meridiano de Hígado (Zu Jue Yin)">Meridiano de Hígado (Zu Jue Yin)</option>
+                                    <option value="Meridiano de Vejiga (Zu Tai Yang)">Meridiano de Vejiga (Zu Tai Yang)</option>
+                                    <option value="Meridiano de Riñón (Zu Shao Yin)">Meridiano de Riñón (Zu Shao Yin)</option>
+                                    <option value="Meridiano de Bazo (Zu Tai Yin)">Meridiano de Bazo (Zu Tai Yin)</option>
+                                    <option value="Meridiano de Estómago (Zu Yang Ming)">Meridiano de Estómago (Zu Yang Ming)</option>
+                                    <option value="Canal Extraordinario Du Mai (Gobernador)">Canal Extraordinario Du Mai (Gobernador)</option>
+                                    <option value="Canal Extraordinario Ren Mai (Concepción)">Canal Extraordinario Ren Mai (Concepción)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1 text-xs">Espíritu del Tratamiento (Principio Terapéutico Guía)</label>
+                            <input id="ana-espiritu" type="text" placeholder="Ej. Pacificar Yang de Hígado, nutrir Sangre, disipar Humedad y calmar el Shen..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Sección 6: Selección de Puntos de Auriculoterapia -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                                <span>6.</span> Prescripción Auricular Inicial (Pabellón & Materiales)
+                            </h3>
+                            <span class="text-xs text-blue-600 font-semibold">Selector Anatómico Rápido</span>
+                        </div>
+
+                        <!-- Panel de Selección de Punto Individual -->
+                        <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-200 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Zona Anatómica</label>
+                                    <select id="ana-punto-zona" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                        <option value="Fosa Triangular">Fosa Triangular</option>
+                                        <option value="Cruz del Hélix">Cruz del Hélix</option>
+                                        <option value="Hélix / Raíz">Hélix / Raíz</option>
+                                        <option value="Concha Cava">Concha Cava</option>
+                                        <option value="Concha Cimba">Concha Cimba</option>
+                                        <option value="Trago">Trago</option>
+                                        <option value="Antitrago">Antitrago</option>
+                                        <option value="Antehélix">Antehélix</option>
+                                        <option value="Lóbulo">Lóbulo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Nombre del Punto</label>
+                                    <input id="ana-punto-nombre" type="text" placeholder="Ej. Shen Men, Riñón, Cero, Hígado" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Material de Estimulación</label>
+                                    <select id="ana-punto-material" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                        <option value="Semillas de Vaccaria">Semillas de Vaccaria</option>
+                                        <option value="Chinchetas Intradérmicas">Chinchetas Intradérmicas</option>
+                                        <option value="Balines Magnéticos (Imanes)">Balines Magnéticos (Imanes)</option>
+                                        <option value="Balines Dorados (Tonificación)">Balines Dorados (Tonificación)</option>
+                                        <option value="Balines Plateados (Sedación)">Balines Plateados (Sedación)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Lateralidad</label>
+                                    <div class="flex gap-2">
+                                        <select id="ana-punto-lateralidad" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                            <option value="Bilateral">Bilateral</option>
+                                            <option value="Derecho">Oreja Derecha</option>
+                                            <option value="Izquierdo">Oreja Izquierda</option>
+                                        </select>
+                                        <button type="button" id="btn-add-punto-ingreso" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold text-xs transition">
+                                            ＋
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Puntos Auriculares ya Agregados a la Ficha -->
+                            <div class="pt-2">
+                                <label class="block font-semibold text-slate-700 text-[11px] mb-1">Puntos Auriculares incluidos en esta Ficha de Ingreso:</label>
+                                <div id="ana-puntos-agregados-lista" class="flex flex-wrap gap-2">
+                                    <!-- Dinámico vía JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Envío -->
+                    <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end items-center gap-3">
+                        <button type="button" onclick="switchTab('search')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btn-submit-anamnesis" class="w-full sm:w-auto bg-blue-900 hover:bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-md transition">
+                            Guardar Ficha de Ingreso (Anamnesis)
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ================================================================== -->
+            <!-- VISTA 3: SEGUIMIENTO DE SESIÓN -->
+            <!-- ================================================================== -->
+            <section id="tab-seguimiento" class="hidden space-y-6">
+                <form id="form-seguimiento" class="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200 space-y-6">
+                    <div class="border-b border-slate-200 pb-4 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Registro de Seguimiento Clínico</h2>
+                            <p class="text-xs text-slate-500">Documenta la respuesta clínica entre sesiones, nueva evaluación lingual y rotación de puntos</p>
+                        </div>
+                        <span class="text-xs bg-emerald-100 text-emerald-900 font-bold px-3 py-1 rounded-full border border-emerald-200">Evolución</span>
+                    </div>
+
+                    <!-- Selector de Paciente y Número de Sesión -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="md:col-span-2">
+                            <label class="block font-semibold text-slate-700 mb-1">Paciente *</label>
+                            <select id="seg-select-paciente" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                <!-- Poblado dinámicamente -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">N° de Sesión / Tratamiento</label>
+                            <input id="seg-numero-tratamiento" type="number" min="2" max="50" value="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-blue-900 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Evolución General y Cambios -->
+                    <div class="space-y-4 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Evolución General desde la última sesión *</label>
+                            <textarea id="seg-evolucion" required rows="3" placeholder="Detalle cómo ha respondido el paciente, mejorías observadas, escala EVA de dolor (ej. 4/10), cambios en sueño o digestión..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Cambios en Síntomas Específicos o Reacciones Adversas</label>
+                            <textarea id="seg-cambios-sintomas" rows="2" placeholder="Desaparición de sabor amargo, menor contractura muscular, sensibilidad en algún punto particular..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Estado Actual de la Lengua en este Seguimiento -->
+                    <div class="space-y-3 pt-4 border-t border-slate-200">
+                        <h3 class="text-xs font-bold text-blue-900 uppercase tracking-wider">Inspección de Lengua en esta Sesión</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Cuerpo Actual</label>
+                                <input id="seg-lengua-cuerpo" type="text" placeholder="Ej. Menos hinchada, marcas dentales atenuadas" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Color Actual</label>
+                                <input id="seg-lengua-color" type="text" placeholder="Ej. Rosada, punta menos hiperémica" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Saburra Actual</label>
+                                <input id="seg-lengua-saburra" type="text" placeholder="Ej. Blanca fina normal" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nuevos Puntos Auriculares y Técnicas Especiales -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 class="text-xs font-bold text-blue-900 uppercase tracking-wider">Puntos de Auriculoterapia Aplicados en esta Sesión</h3>
+                        
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Zona</label>
+                                    <select id="seg-punto-zona" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                        <option value="Fosa Triangular">Fosa Triangular</option>
+                                        <option value="Cruz del Hélix">Cruz del Hélix</option>
+                                        <option value="Concha Cava">Concha Cava</option>
+                                        <option value="Concha Cimba">Concha Cimba</option>
+                                        <option value="Trago">Trago</option>
+                                        <option value="Antitrago">Antitrago</option>
+                                        <option value="Lóbulo">Lóbulo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Punto</label>
+                                    <input id="seg-punto-nombre" type="text" placeholder="Ej. Shen Men, Punto Cero" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Material</label>
+                                    <select id="seg-punto-material" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                        <option value="Semillas de Vaccaria">Semillas de Vaccaria</option>
+                                        <option value="Chinchetas Intradérmicas">Chinchetas Intradérmicas</option>
+                                        <option value="Balines Magnéticos">Balines Magnéticos</option>
+                                        <option value="Balines Dorados">Balines Dorados</option>
+                                        <option value="Balines Plateados">Balines Plateados</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Lateralidad</label>
+                                    <div class="flex gap-2">
+                                        <select id="seg-punto-lateralidad" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                            <option value="Bilateral">Bilateral</option>
+                                            <option value="Derecho">Derecho</option>
+                                            <option value="Izquierdo">Izquierdo</option>
+                                        </select>
+                                        <button type="button" id="btn-add-punto-seg" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold text-xs transition">＋</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <label class="block font-semibold text-slate-700 text-[11px] mb-1">Puntos asignados para esta sesión:</label>
+                                <div id="seg-puntos-agregados-lista" class="flex flex-wrap gap-2">
+                                    <!-- Dinámico vía JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Técnicas Especiales y Observaciones -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-2">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Técnicas Especiales Complementarias</label>
+                                <input id="seg-tecnicas-especiales" type="text" placeholder="Ej. Ventosas de fuego en V18/V23, Moxa directa, Martillo de flor de ciruelo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Indicaciones al Paciente para el Hogar</label>
+                                <input id="seg-observaciones" type="text" placeholder="Ej. Presión intermitente 3 veces al día en Shen Men, evitar frío" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón Guardar Seguimiento -->
+                    <div class="pt-4 border-t border-slate-200 flex justify-end">
+                        <button type="submit" id="btn-submit-seguimiento" class="bg-blue-900 hover:bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-md transition">
+                            Guardar Seguimiento de Sesión
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ================================================================== -->
+            <!-- VISTA 4: AUTOCOMPLETADO IA (EXTRACCIÓN INTELIGENTE DE DOCUMENTOS) -->
+            <!-- ================================================================== -->
+            <section id="tab-ai" class="hidden space-y-6">
+                <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200 space-y-6">
+                    <div class="border-b border-slate-200 pb-4 flex justify-between items-start">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <span>✨</span> Autocompletado IA de Fichas Clínicas
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-1">Arrastra documentos clínicos, informes de interconsulta o fichas previas en PDF/TXT para pre-rellenar la anamnesis automáticamente.</p>
+                        </div>
+                        <button id="btn-ai-load-sample" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-50 transition">
+                            Cargar Informe Muestra
+                        </button>
+                    </div>
+
+                    <!-- Dropzone Interactiva -->
+                    <div id="ai-dropzone" class="border-2 border-dashed border-slate-300 hover:border-blue-600 rounded-2xl p-8 sm:p-12 text-center transition cursor-pointer bg-slate-50/60 group">
+                        <input type="file" id="ai-file-input" class="hidden" accept=".pdf,.txt,.docx,.png,.jpg">
+                        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                            📄
+                        </div>
+                        <h4 class="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition">
+                            Arrastra y suelta aquí tu archivo o haz clic para explorar
+                        </h4>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Soporta archivos PDF clínicos, textos de notas médicas o imágenes escaneadas
+                        </p>
+                    </div>
+
+                    <!-- Indicador de procesamiento -->
+                    <div id="ai-processing-status" class="hidden text-center py-6 space-y-2">
+                        <div class="inline-block animate-spin text-2xl text-blue-600">🌀</div>
+                        <p class="text-xs font-bold text-slate-700">Analizando documento clínico mediante IA...</p>
+                        <p class="text-[11px] text-slate-400">Extrayendo datos de filiación, anamnesis, lengua y correspondencia MTC</p>
+                    </div>
+
+                    <!-- Resultados Extraídos por IA -->
+                    <div id="ai-results-box" class="hidden space-y-4 pt-2">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                                <span>🎯</span> Campos Extraídos y Homologados a MTC
+                            </h4>
+                            <span id="ai-badge-filename" class="text-xs font-mono bg-blue-100 text-blue-900 px-2 py-0.5 rounded font-bold">archivo.pdf</span>
+                        </div>
+
+                        <div id="ai-extracted-fields-container" class="space-y-3">
+                            <!-- Inyectado vía app.js -->
+                        </div>
+
+                        <div class="pt-3 flex justify-end">
+                            <button id="btn-ai-apply-to-form" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition flex items-center space-x-2">
+                                <span>Transferir Datos a Ficha de Ingreso</span>
+                                <span>➔</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================================================================== -->
+            <!-- VISTA 5: MÓDULO DE EVOLUCIÓN FOTOGRÁFICA -->
+            <!-- ================================================================== -->
+            <section id="tab-photos" class="hidden space-y-6">
+                <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-slate-200 space-y-6">
+                    <div class="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <span>📷</span> Evolución Fotográfica Clínica (Lengua y Pabellón Auricular)
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-1">Comparativa visual objetiva entre la sesión inicial de ingreso y los seguimientos clínicos</p>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <button id="btn-upload-photo" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition">
+                                ＋ Registrar Foto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Controles y Filtros -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Paciente</label>
+                            <select id="photo-select-paciente" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                <!-- Poblado dinámicamente -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Estructura Anatómica</label>
+                            <select id="photo-select-organo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none bg-white">
+                                <option value="lengua">Lengua (Glosodiagnosis MTC)</option>
+                                <option value="oreja">Pabellón Auricular (Auriculoterapia)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Modo de Comparación</label>
+                            <div class="flex space-x-1 p-1 bg-white border border-slate-200 rounded-lg">
+                                <button id="btn-photo-mode-side" class="flex-1 text-xs py-1 rounded font-bold bg-blue-900 text-white">Lado a Lado</button>
+                                <button id="btn-photo-mode-slider" class="flex-1 text-xs py-1 rounded font-medium text-slate-600 hover:bg-slate-100">Deslizador Split</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODO 1: COMPARATIVA EN PARALELO (SIDE-BY-SIDE) -->
+                    <div id="comparison-view-side-by-side" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-full">Sesión 1 (Ingreso)</span>
+                                <span class="text-slate-400 font-mono text-[11px]">Foto Inicial</span>
+                            </div>
+                            <div class="h-64 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center relative">
+                                <img id="photo-side-1" src="" alt="Foto Inicial" class="w-full h-full object-cover">
+                            </div>
+                            <p id="photo-note-1" class="text-xs text-slate-600 italic bg-white p-2.5 rounded-lg border border-slate-200">
+                                Cargando observación...
+                            </p>
+                        </div>
+
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-emerald-900 bg-emerald-100 px-2.5 py-0.5 rounded-full">Sesión Actual (Seguimiento)</span>
+                                <span class="text-slate-400 font-mono text-[11px]">Evolución</span>
+                            </div>
+                            <div class="h-64 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center relative">
+                                <img id="photo-side-2" src="" alt="Foto Actual" class="w-full h-full object-cover">
+                            </div>
+                            <p id="photo-note-2" class="text-xs text-slate-600 italic bg-white p-2.5 rounded-lg border border-slate-200">
+                                Cargando observación...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- MODO 2: COMPARADOR INTERACTIVO CON SLIDER DESLIZANTE -->
+                    <div id="comparison-view-slider" class="hidden space-y-4">
+                        <div class="comparison-container relative">
+                            <!-- Imagen Posterior (Seguimiento) -->
+                            <img id="photo-split-after" src="" alt="Después" class="comparison-image">
+                            
+                            <!-- Imagen Superpuesta (Antes - Ingreso) -->
+                            <div id="comparison-overlay-split" class="comparison-overlay">
+                                <img id="photo-split-before" src="" alt="Antes" class="comparison-image">
+                            </div>
+
+                            <!-- Manilla de Arrastre -->
+                            <div id="comparison-slider-handle" class="comparison-slider-handle">
+                                ↔
+                            </div>
+                        </div>
+
+                        <!-- Barra de Rango de Desplazamiento -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold text-slate-600 px-1">
+                                <span>◀ Sesión 1: Ingreso</span>
+                                <span>Desliza para comparar</span>
+                                <span>Sesión Seguimiento ▶</span>
+                            </div>
+                            <input id="photo-slider-range" type="range" min="0" max="100" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ============================================================================== -->
+    <!-- MODAL DE CONFIGURACIÓN CLOUD SUPABASE (DEDICATED SCHEMA) -->
+    <!-- ============================================================================== -->
+    <div id="cloud-config-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-6 space-y-5">
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl">⚡</span>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Conexión Supabase Cloud</h3>
+                        <p class="text-xs text-slate-500">Esquema dedicado para no saturar proyectos gratuitos</p>
+                    </div>
+                </div>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">SUPABASE_URL</label>
+                    <input id="input-supabase-url" type="text" placeholder="https://tu-proyecto.supabase.co" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">SUPABASE_ANON_KEY (Llave Pública)</label>
+                    <input id="input-supabase-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Esquema Dedicado PostgreSQL</label>
+                    <input id="input-supabase-schema" type="text" value="clinica_mtc" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-50 font-bold text-blue-900" readonly>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-[11px] text-blue-800 space-y-1">
+                <p class="font-bold">💡 Nota del Arquitecto Cloud:</p>
+                <p>Si aún no has creado tu proyecto en Supabase, la app funciona de inmediato con persistencia local y datos clínicos de muestra para que puedas operar sin interrupciones.</p>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <button id="btn-test-cloud-config" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold transition border border-slate-300">
+                    Probar Conexión con Supabase
+                </button>
+                <button id="btn-save-cloud-config" class="w-full bg-blue-900 hover:bg-slate-900 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-xs">
+                    Guardar y Conectar
+                </button>
+                <button id="btn-reset-demo-data" class="w-full text-slate-400 hover:text-slate-600 text-[11px] py-1 transition">
+                    Restablecer Pacientes de Demostración
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de la Aplicación -->
+    <script src="supabase.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

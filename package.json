@@ -1,0 +1,28 @@
+{
+  "name": "clinica-mtc-auriculoterapia",
+  "version": "1.0.0",
+  "description": "Sistema Clínico Cloud para Medicina Tradicional China y Auriculoterapia con Supabase y Vercel",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "echo 'Proyecto estático optimizado listo para Vercel'",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "medicina-tradicional-china",
+    "auriculoterapia",
+    "fichas-clinicas",
+    "supabase",
+    "postgresql",
+    "vercel",
+    "acupuntura"
+  ],
+  "author": "Jorge & Arquitectura Cloud",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.0"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

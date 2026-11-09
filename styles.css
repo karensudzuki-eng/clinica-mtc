@@ -1,0 +1,183 @@
+/* ==============================================================================
+   ESTILOS COMPLEMENTARIOS - SISTEMA CLÍNICO MTC & AURICULOTERAPIA
+   Paleta: Azul Corporativo Profesional Clínico (Blue 900, Blue 600, Slate)
+   ============================================================================== */
+
+:root {
+    --primary-blue-900: #0f274a;
+    --primary-blue-800: #1e3a8a;
+    --primary-blue-700: #1d4ed8;
+    --accent-blue-600: #2563eb;
+    --accent-blue-500: #3b82f6;
+    --accent-blue-100: #dbeafe;
+    --accent-blue-50: #eff6ff;
+    --clinical-bg: #f8fafc;
+    --card-border: #e2e8f0;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--clinical-bg);
+    color: #1e293b;
+}
+
+.transition-standard {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badges de los 5 Elementos MTC */
+.badge-element-madera {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+.badge-element-fuego {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+.badge-element-tierra {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+.badge-element-metal {
+    background-color: #f8fafc;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+.badge-element-agua {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* Comparador de fotos interactivo (Split Slider Before/After) */
+.comparison-container {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    overflow: hidden;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    background-color: #0f172a;
+    user-select: none;
+}
+
+.comparison-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.comparison-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 50%;
+    overflow: hidden;
+    border-right: 3px solid #2563eb;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.comparison-overlay .comparison-image {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+}
+
+.comparison-slider-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 38px;
+    height: 38px;
+    background: #2563eb;
+    color: white;
+    border: 3px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ew-resize;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    z-index: 20;
+    pointer-events: none;
+}
+
+/* Indicador de pulsación de sincronización */
+.pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    position: relative;
+}
+.pulse-dot.online {
+    background-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulse 2s infinite;
+}
+.pulse-dot.offline {
+    background-color: #f59e0b;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* Scrollbars clínicas sutiles */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.toast-animate {
+    animation: slideDownFade 0.3s ease forwards;
+}
+
+@media print {
+    header, aside, .no-print, button {
+        display: none !important;
+    }
+    body, main {
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
